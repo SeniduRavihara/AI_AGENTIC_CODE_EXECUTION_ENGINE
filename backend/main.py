@@ -4,6 +4,7 @@ Real AI agents using Google Gemini
 """
 
 from fastapi import FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import Dict, Any
 import os
@@ -23,6 +24,15 @@ app = FastAPI(
     version="1.0.0"
 )
 
+# Add CORS middleware
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:3000", "http://localhost:3001"],  # Next.js dev server
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 # Initialize AI coordinator
 try:
     coordinator = CoordinatorAgent()
@@ -40,6 +50,7 @@ class CodeRequest(BaseModel):
 class CodeResponse(BaseModel):
     success: bool
     final_variables: Dict[str, Any]
+    console_output: list
     execution_steps: list
     ai_reasoning: str
     confidence: float
@@ -107,6 +118,7 @@ async def execute_code(request: CodeRequest):
         return CodeResponse(
             success=result.get("success", False),
             final_variables=result.get("final_variables", {}),
+            console_output=result.get("console_output", []),
             execution_steps=result.get("execution_steps", []),
             ai_reasoning=result.get("ai_reasoning", ""),
             confidence=result.get("confidence", 0.0),

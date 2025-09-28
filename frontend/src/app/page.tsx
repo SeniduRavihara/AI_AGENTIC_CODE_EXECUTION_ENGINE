@@ -8,6 +8,7 @@ const Editor = dynamic(() => import('@monaco-editor/react'), { ssr: false });
 interface ExecutionResult {
   success: boolean;
   final_variables: Record<string, any>;
+  console_output: string[];
   execution_steps: string[];
   ai_reasoning: string;
   confidence: number;
@@ -20,25 +21,36 @@ interface ExecutionResult {
 }
 
 export default function Home() {
-  const [code, setCode] = useState(`# AI Python Interpreter
-# Write your Python code and see AI reasoning
+  const [code, setCode] = useState(`# AI Python Interpreter - Console Output Test
+print("Hello, AI Python Interpreter!")
+print("=" * 40)
 
+# Variables and calculations
 x = 10
 y = x * 2
+print(f"x = {x}")
+print(f"y = x * 2 = {y}")
 
+# Conditional logic with output
 if y > 15:
     result = "Large number"
-    print(f"Result: {result}")
+    print(f"Since y ({y}) > 15, result = '{result}'")
 else:
     result = "Small number"
-    print(f"Result: {result}")
+    print(f"Since y ({y}) <= 15, result = '{result}'")
 
-print(f"Final: x={x}, y={y}, result={result}")`);
+# Final summary
+print("=" * 40)
+print(f"Final values:")
+print(f"  x = {x}")
+print(f"  y = {y}")
+print(f"  result = {result}")
+print("Done!")`);
 
   const [result, setResult] = useState<ExecutionResult | null>(null);
   const [isExecuting, setIsExecuting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState('variables');
+  const [activeTab, setActiveTab] = useState('console');
   const [isMaximized, setIsMaximized] = useState(false);
   const [sessionTime, setSessionTime] = useState('00:00:00');
 
@@ -364,7 +376,7 @@ print(f"Final: x={x}, y={y}, result={result}")`);
 
             {/* Tab Navigation */}
             <div className="flex items-center space-x-1 mt-4">
-              {['variables', 'steps', 'reasoning', 'details'].map((tab) => (
+              {['console', 'variables', 'steps', 'reasoning', 'details'].map((tab) => (
                 <button
                   key={tab}
                   onClick={() => setActiveTab(tab)}
@@ -399,6 +411,49 @@ print(f"Final: x={x}, y={y}, result={result}")`);
               </div>
             ) : result ? (
               <div className="p-6">
+                {activeTab === 'console' && (
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <h3 className="text-lg font-semibold text-white">Console Output</h3>
+                      <div className="flex items-center space-x-2 text-sm text-gray-400">
+                        <span>💻</span>
+                        <span>{result.console_output?.length || 0} lines</span>
+                      </div>
+                    </div>
+                    <div className="bg-black border border-[#333] rounded-xl overflow-hidden">
+                      <div className="bg-[#1a1a1a] border-b border-[#333] px-4 py-2 flex items-center space-x-2">
+                        <span className="text-green-400 text-sm">●</span>
+                        <span className="text-white text-sm font-mono">Python Console</span>
+                        <div className="flex-1"></div>
+                        <span className="text-gray-500 text-xs">Output</span>
+                      </div>
+                      <div className="p-4 font-mono text-sm min-h-[200px] max-h-[400px] overflow-auto">
+                        {result.console_output && result.console_output.length > 0 ? (
+                          <div className="space-y-1">
+                            {result.console_output.map((line, index) => (
+                              <div key={index} className="text-white leading-relaxed">
+                                {line}
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <div className="text-gray-500 italic flex items-center justify-center h-32">
+                            <div className="text-center">
+                              <div className="text-2xl mb-2">📟</div>
+                              <div>No console output</div>
+                              <div className="text-xs mt-1">(no print statements executed)</div>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                    <div className="text-xs text-gray-500 flex items-center space-x-2">
+                      <span>📝</span>
+                      <span>Output from print() statements and expressions</span>
+                    </div>
+                  </div>
+                )}
+
                 {activeTab === 'variables' && Object.keys(result.final_variables).length > 0 && (
                   <div className="space-y-4">
                     <div className="flex items-center justify-between">

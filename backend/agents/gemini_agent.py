@@ -34,7 +34,7 @@ class GeminiAgent:
         """
         
         prompt = f"""
-You are an AI agent that simulates Python code execution. 
+You are an AI agent that simulates Python code execution exactly like a real Python interpreter.
 
 Execute this Python code step by step and provide the results:
 
@@ -47,7 +47,8 @@ For each line of code:
 2. Track variable changes
 3. Evaluate expressions
 4. Handle control flow (if/else, loops)
-5. Show your reasoning process
+5. Capture print() outputs
+6. Show your reasoning process
 
 Provide your response in this JSON format:
 {{
@@ -55,6 +56,10 @@ Provide your response in this JSON format:
     "final_variables": {{
         "variable_name": "value"
     }},
+    "console_output": [
+        "Line 1 of print output",
+        "Line 2 of print output"
+    ],
     "execution_steps": [
         "Step 1: description",
         "Step 2: description"
@@ -63,7 +68,11 @@ Provide your response in this JSON format:
     "confidence": 0.95
 }}
 
-Be precise and show your AI reasoning clearly.
+IMPORTANT:
+- Include ALL print() statements output in "console_output"
+- Show output exactly as Python would display it
+- If there are no print statements, set "console_output" to []
+- Be precise and show your AI reasoning clearly.
 """
         
         try:
@@ -90,6 +99,10 @@ Be precise and show your AI reasoning clearly.
                 if not all(key in result for key in ["success", "final_variables", "ai_reasoning"]):
                     raise ValueError("Invalid response format")
                 
+                # Ensure console_output exists
+                if "console_output" not in result:
+                    result["console_output"] = []
+                
                 return result
                 
             except (json.JSONDecodeError, ValueError) as e:
@@ -97,6 +110,7 @@ Be precise and show your AI reasoning clearly.
                 return {
                     "success": True,
                     "final_variables": self._extract_variables_from_text(response_text),
+                    "console_output": [],
                     "execution_steps": [f"AI executed: {line.strip()}" for line in code.split('\n') if line.strip()],
                     "ai_reasoning": response_text,
                     "confidence": 0.7
@@ -106,6 +120,7 @@ Be precise and show your AI reasoning clearly.
             return {
                 "success": False,
                 "final_variables": {},
+                "console_output": [],
                 "execution_steps": [],
                 "ai_reasoning": f"AI execution failed: {str(e)}",
                 "confidence": 0.0,
