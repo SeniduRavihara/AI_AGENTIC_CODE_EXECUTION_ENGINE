@@ -21,32 +21,91 @@ interface ExecutionResult {
 }
 
 export default function Home() {
-  const [code, setCode] = useState(`# AI Python Interpreter - Console Output Test
-print("Hello, AI Python Interpreter!")
-print("=" * 40)
+  const [language, setLanguage] = useState('python');
+  
+  const getLanguageExample = (lang: string) => {
+    if (lang === 'java') {
+      return `// AI Java Interpreter - Basic Java Test
+public class HelloWorld {
+    public static void main(String[] args) {
+        System.out.println("Testing Java execution with AI reasoning!");
+        System.out.println("==========================================");
+        
+        // Test 1: Basic variables
+        int age = 25;
+        String status;
+        System.out.println("Age: " + age);
+        
+        if (age >= 18) {
+            status = "adult";
+            System.out.println("Since " + age + " >= 18, you are an " + status);
+        } else {
+            status = "minor";
+            System.out.println("Since " + age + " < 18, you are a " + status);
+        }
+        
+        // Test 2: Loops and calculations
+        int sum = 0;
+        for (int i = 1; i <= 5; i++) {
+            sum += i;
+            System.out.println("Adding " + i + ", sum is now: " + sum);
+        }
+        
+        System.out.println("==========================================");
+        System.out.println("Final status: " + status + ", sum: " + sum);
+    }
+}`;
+    } else {
+      return `# AI Python Interpreter - If/Else Statement Test
+print("Testing if/else statements with AI reasoning!")
+print("=" * 50)
 
-# Variables and calculations
-x = 10
-y = x * 2
-print(f"x = {x}")
-print(f"y = x * 2 = {y}")
+# Test 1: Basic if/else
+age = 25
+print(f"Age: {age}")
 
-# Conditional logic with output
-if y > 15:
-    result = "Large number"
-    print(f"Since y ({y}) > 15, result = '{result}'")
+if age >= 18:
+    status = "adult"
+    print(f"Since {age} >= 18, you are an {status}")
 else:
-    result = "Small number"
-    print(f"Since y ({y}) <= 15, result = '{result}'")
+    status = "minor"
+    print(f"Since {age} < 18, you are a {status}")
 
-# Final summary
-print("=" * 40)
-print(f"Final values:")
-print(f"  x = {x}")
-print(f"  y = {y}")
-print(f"  result = {result}")
-print("Done!")`);
+# Test 2: Nested conditions
+score = 85
+print(f"\\nScore: {score}")
 
+if score >= 90:
+    grade = "A"
+    print(f"Excellent! Grade: {grade}")
+elif score >= 80:
+    grade = "B"
+    print(f"Good job! Grade: {grade}")
+elif score >= 70:
+    grade = "C"
+    print(f"Average. Grade: {grade}")
+else:
+    grade = "F"
+    print(f"Need improvement. Grade: {grade}")
+
+# Test 3: Complex condition
+x = 15
+y = 10
+print(f"\\nx = {x}, y = {y}")
+
+if x > y and x > 10:
+    result = "x is large and greater than y"
+    print(f"Complex condition true: {result}")
+else:
+    result = "condition not met"
+    print(f"Complex condition false: {result}")
+
+print("=" * 50)
+print(f"Final status: {status}, grade: {grade}, result: {result}")`;
+    }
+  };
+
+  const [code, setCode] = useState(() => getLanguageExample('python'));
   const [result, setResult] = useState<ExecutionResult | null>(null);
   const [isExecuting, setIsExecuting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -73,6 +132,8 @@ print("Done!")`);
     setResult(null);
 
     try {
+      console.log('Sending request:', { code: code.substring(0, 100) + '...', language });
+      
       const response = await fetch('http://localhost:8000/execute', {
         method: 'POST',
         headers: {
@@ -80,12 +141,16 @@ print("Done!")`);
         },
         body: JSON.stringify({
           code: code,
-          language: 'python',
+          language: language,
         }),
       });
 
+      console.log('Response status:', response.status);
+      
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+        const errorText = await response.text();
+        console.error('Error response:', errorText);
+        throw new Error(`HTTP error! status: ${response.status} - ${errorText}`);
       }
 
       const data = await response.json();
@@ -102,20 +167,14 @@ print("Done!")`);
   };
 
   const resetCode = () => {
-    setCode(`# AI Python Interpreter
-# Write your Python code and see AI reasoning
+    setCode(getLanguageExample(language));
+  };
 
-x = 10
-y = x * 2
-
-if y > 15:
-    result = "Large number"
-    print(f"Result: {result}")
-else:
-    result = "Small number"
-    print(f"Result: {result}")
-
-print(f"Final: x={x}, y={y}, result={result}")`);
+  const handleLanguageChange = (newLanguage: string) => {
+    setLanguage(newLanguage);
+    setCode(getLanguageExample(newLanguage));
+    setResult(null);
+    setError(null);
   };
 
   return (
@@ -168,6 +227,19 @@ print(f"Final: x={x}, y={y}, result={result}")`);
 
             {/* Right Section - Action Controls */}
             <div className="flex items-center space-x-4">
+              {/* Language Selector */}
+              <div className="flex items-center space-x-2">
+                <span className="text-sm text-gray-400">Language:</span>
+                <select 
+                  value={language}
+                  onChange={(e) => handleLanguageChange(e.target.value)}
+                  className="bg-gradient-to-b from-[#2a2a2a] to-[#1f1f1f] border border-[#404040] rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-orange-500 transition-colors"
+                >
+                  <option value="python">🐍 Python</option>
+                  <option value="java">☕ Java</option>
+                </select>
+              </div>
+              
               <div className="flex items-center space-x-2">
                 <button className="p-3 bg-gradient-to-b from-[#2a2a2a] to-[#1f1f1f] hover:from-[#333] hover:to-[#2a2a2a] border border-[#404040] hover:border-[#525252] rounded-xl transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105 active:scale-95 group">
                   <span className="text-gray-400 group-hover:text-white transition-all duration-300">⚙️</span>
@@ -258,12 +330,14 @@ print(f"Final: x={x}, y={y}, result={result}")`);
           <div className="flex items-center justify-between px-6 py-4 bg-gradient-to-r from-[#1f1f1f] to-[#252525] border-b border-[#2a2a2a]">
             <div className="flex items-center space-x-4">
               <div className="flex items-center space-x-2 px-3 py-2 bg-gradient-to-r from-[#2a2a2a] to-[#333333] border border-[#404040] rounded-lg">
-                <span className="text-orange-400">📜</span>
-                <span className="text-sm text-gray-200 font-medium">main.py</span>
+                <span className="text-orange-400">{language === 'java' ? '☕' : '📜'}</span>
+                <span className="text-sm text-gray-200 font-medium">
+                  {language === 'java' ? 'HelloWorld.java' : 'main.py'}
+                </span>
               </div>
               <div className="flex items-center space-x-2 text-sm text-gray-400">
                 <span>💻</span>
-                <span>Python 3.11.0</span>
+                <span>{language === 'java' ? 'Java 17' : 'Python 3.11.0'}</span>
               </div>
             </div>
             
@@ -294,7 +368,8 @@ print(f"Final: x={x}, y={y}, result={result}")`);
           <div className="flex-1 relative">
             <Editor
               height="100%"
-              defaultLanguage="python"
+              defaultLanguage={language}
+              language={language}
               value={code}
               onChange={(value) => setCode(value || '')}
               theme="vs-dark"
@@ -395,17 +470,17 @@ print(f"Final: x={x}, y={y}, result={result}")`);
           {/* Results Content */}
           <div className="flex-1 overflow-auto">
             {isExecuting ? (
-              <div className="flex items-center justify-center h-full">
-                <div className="text-center space-y-4">
-                  <div className="relative">
-                    <div className="w-16 h-16 border-4 border-orange-500/30 border-t-orange-500 rounded-full animate-spin"></div>
+              <div className="flex items-center justify-center h-full px-8">
+                <div className="text-center space-y-6 max-w-sm mx-auto">
+                  <div className="relative flex justify-center">
+                    <div className="w-20 h-20 border-4 border-orange-500/30 border-t-orange-500 rounded-full animate-spin"></div>
                     <div className="absolute inset-0 flex items-center justify-center">
-                      <span className="text-orange-400 text-2xl">🤖</span>
+                      <span className="text-orange-400 text-3xl">🤖</span>
                     </div>
                   </div>
-                  <div className="space-y-2">
-                    <p className="text-gray-300 font-medium">AI is analyzing your code...</p>
-                    <p className="text-gray-500 text-sm">This may take a few moments</p>
+                  <div className="space-y-3">
+                    <p className="text-white text-lg font-semibold">AI is analyzing your code...</p>
+                    <p className="text-gray-400 text-center leading-relaxed">This may take a few moments</p>
                   </div>
                 </div>
               </div>
@@ -583,30 +658,30 @@ print(f"Final: x={x}, y={y}, result={result}")`);
                 )}
               </div>
             ) : (
-              <div className="flex items-center justify-center h-full">
-                <div className="text-center space-y-6">
-                  <div className="relative">
-                    <div className="w-20 h-20 bg-gradient-to-r from-[#252526] to-[#2a2a2a] border border-[#3e3e3e] rounded-2xl flex items-center justify-center shadow-xl">
-                      <div className="text-4xl">🚀</div>
+              <div className="flex items-center justify-center h-full px-8">
+                <div className="text-center space-y-8 max-w-md mx-auto">
+                  <div className="relative flex justify-center">
+                    <div className="w-24 h-24 bg-gradient-to-r from-[#252526] to-[#2a2a2a] border border-[#3e3e3e] rounded-2xl flex items-center justify-center shadow-xl">
+                      <div className="text-5xl">🚀</div>
                     </div>
-                    <div className="absolute -top-1 -right-1 w-6 h-6 bg-gradient-to-r from-orange-500 to-red-500 rounded-full flex items-center justify-center">
-                      <span className="text-white">✨</span>
+                    <div className="absolute -top-2 -right-2 w-8 h-8 bg-gradient-to-r from-orange-500 to-red-500 rounded-full flex items-center justify-center">
+                      <span className="text-white text-sm">✨</span>
                     </div>
                   </div>
-                  <div className="space-y-2">
-                    <h3 className="text-xl font-semibold text-white">Ready for AI Analysis</h3>
-                    <p className="text-gray-400 max-w-sm">
+                  <div className="space-y-3">
+                    <h3 className="text-2xl font-bold text-white">Ready for AI Analysis</h3>
+                    <p className="text-gray-400 text-center leading-relaxed">
                       Execute your Python code to see detailed AI-powered analysis, variable tracking, and intelligent reasoning.
                     </p>
                   </div>
-                  <div className="flex items-center justify-center space-x-4 text-sm text-gray-500">
-                    <div className="flex items-center space-x-1">
-                      <span>🤖</span>
+                  <div className="flex items-center justify-center space-x-6 text-sm text-gray-500">
+                    <div className="flex items-center space-x-2">
+                      <span className="text-lg">🤖</span>
                       <span>AI Powered</span>
                     </div>
-                    <span>•</span>
-                    <div className="flex items-center space-x-1">
-                      <span>⚡</span>
+                    <div className="w-1 h-1 bg-gray-600 rounded-full"></div>
+                    <div className="flex items-center space-x-2">
+                      <span className="text-lg">⚡</span>
                       <span>Real-time Analysis</span>
                     </div>
                   </div>

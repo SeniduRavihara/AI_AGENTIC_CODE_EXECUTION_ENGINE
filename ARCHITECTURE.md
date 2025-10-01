@@ -37,6 +37,7 @@ Python Code → AI Agent → Natural Language Reasoning → Results
   - Track variable states
   - Provide natural language reasoning
   - Handle control flow (if/else, loops)
+  - Capture console output (print statements)
 
 #### **CoordinatorAgent** (`agents/coordinator.py`)
 - **Purpose**: Orchestrates AI agents
@@ -45,7 +46,25 @@ Python Code → AI Agent → Natural Language Reasoning → Results
   - Coordinate execution flow
   - Add metadata to responses
 
-### 3. **Configuration & Setup**
+### 3. **Frontend Application** (`frontend/`)
+
+#### **Next.js Application**
+- **Purpose**: Modern web interface for the AI interpreter
+- **Features**:
+  - Monaco code editor (VS Code editor)
+  - LeetCode-style dark theme
+  - Real-time execution with AI analysis
+  - Multiple result views (Console, Variables, Steps, Reasoning)
+  - Professional UI/UX design
+
+#### **Key Components**
+- **Code Editor**: Monaco editor with Python syntax highlighting
+- **Console Output**: Terminal-style display showing print() outputs
+- **Variable Tracking**: Display of variable states after execution
+- **AI Reasoning**: Natural language explanations of code execution
+- **Execution Steps**: Step-by-step breakdown of code execution
+
+### 4. **Configuration & Setup**
 
 #### **Environment Management**
 - **`.env`** - Contains API keys (ignored by git)
@@ -62,21 +81,23 @@ Python Code → AI Agent → Natural Language Reasoning → Results
 ## 🔄 Execution Flow
 
 ```
-1. Client Request
+1. Frontend Code Editor
    ↓
-2. FastAPI Server (main.py)
+2. HTTP Request to Backend
    ↓
-3. CoordinatorAgent
+3. FastAPI Server (main.py)
    ↓
-4. GeminiAgent
+4. CoordinatorAgent
    ↓
-5. Google Gemini API
+5. GeminiAgent
    ↓
-6. AI Reasoning & Code Execution
+6. Google Gemini API
    ↓
-7. Structured Response
+7. AI Reasoning & Code Execution
    ↓
-8. Client Response
+8. Structured Response (with console output)
+   ↓
+9. Frontend Display (Console, Variables, etc.)
 ```
 
 ## 🧠 AI Execution Process
@@ -93,17 +114,25 @@ Python Code → AI Agent → Natural Language Reasoning → Results
 # Reasoning: "After executing x + 3, y becomes 5"
 ```
 
-### **Step 3: Control Flow**
+### **Step 3: Console Output Capture**
+```python
+# Input: "print(f'x = {x}')"
+# AI captures: ["x = 2"]
+# Displays in console tab exactly like Python interpreter
+```
+
+### **Step 4: Control Flow**
 ```python
 # Input: "if y > 4: z = y * 2"
 # AI Reasoning: "Since y is 5 and 5 > 4 is True, I execute the if block..."
 ```
 
-### **Step 4: Response Generation**
+### **Step 5: Response Generation**
 ```json
 {
   "success": true,
   "final_variables": {"x": 2, "y": 5, "z": 10},
+  "console_output": ["x = 2", "y = 5"],
   "ai_reasoning": "The AI executed the code step by step...",
   "confidence": 0.95
 }
@@ -112,27 +141,42 @@ Python Code → AI Agent → Natural Language Reasoning → Results
 ## 📁 Project Structure
 
 ```
-backend/
-├── agents/                 # AI agents
-│   ├── __init__.py
-│   ├── gemini_agent.py    # Core AI agent
-│   └── coordinator.py     # Agent coordinator
-├── tests/                 # Test files
-│   ├── __init__.py
-│   ├── test_client.py     # Main test client
-│   ├── simple_test.py     # Simple API test
-│   ├── check_models.py    # Model checker
-│   └── README.md          # Test documentation
-├── venv/                  # Virtual environment
-├── .env                   # Environment variables (ignored)
-├── .gitignore            # Git ignore rules
-├── env_template.txt      # Environment template
-├── main.py               # FastAPI server
-├── run_server.py         # Server runner
-├── requirements.txt      # Dependencies
-├── README.md            # Main documentation
-├── SETUP.md             # Setup instructions
-└── ARCHITECTURE.md      # This file
+AI_AGENTIC_CODE_EXECUTION_ENGINE/
+├── backend/                   # FastAPI Backend
+│   ├── agents/               # AI agents
+│   │   ├── __init__.py
+│   │   ├── gemini_agent.py  # Core AI agent
+│   │   └── coordinator.py   # Agent coordinator
+│   ├── tests/               # Test files
+│   │   ├── __init__.py
+│   │   ├── test_client.py   # Main test client
+│   │   ├── simple_test.py   # Simple API test
+│   │   ├── check_models.py  # Model checker
+│   │   └── README.md        # Test documentation
+│   ├── venv/                # Virtual environment
+│   ├── .env                 # Environment variables (ignored)
+│   ├── .gitignore          # Git ignore rules
+│   ├── env_template.txt    # Environment template
+│   ├── main.py             # FastAPI server
+│   ├── run_server.py       # Server runner
+│   ├── requirements.txt    # Dependencies
+│   ├── README.md          # Backend documentation
+│   └── SETUP.md           # Setup instructions
+├── frontend/                # Next.js Frontend
+│   ├── src/
+│   │   └── app/
+│   │       ├── globals.css  # Global styles
+│   │       ├── layout.tsx   # Root layout
+│   │       └── page.tsx     # Main application
+│   ├── public/              # Static assets
+│   ├── node_modules/        # Node dependencies
+│   ├── package.json         # Node dependencies
+│   ├── package-lock.json    # Lock file
+│   ├── next.config.ts       # Next.js config
+│   ├── tsconfig.json        # TypeScript config
+│   ├── tailwind.config.ts   # Tailwind config
+│   └── README.md           # Frontend documentation
+└── ARCHITECTURE.md         # This file (project overview)
 ```
 
 ## 🔧 Technical Stack
@@ -142,6 +186,14 @@ backend/
 - **Google Gemini AI** - AI reasoning engine
 - **Python 3.13** - Runtime environment
 - **Uvicorn** - ASGI server
+- **CORS Middleware** - Cross-origin support
+
+### **Frontend**
+- **Next.js 15** - React framework with Turbopack
+- **React 19** - UI library
+- **TypeScript** - Type safety
+- **Tailwind CSS** - Utility-first styling
+- **Monaco Editor** - VS Code editor component
 
 ### **AI Integration**
 - **google-generativeai** - Gemini API client
@@ -160,17 +212,30 @@ backend/
 - Natural language explanations for each step
 - Context-aware execution
 
-### **2. Safe Execution**
+### **2. Professional UI/UX**
+- LeetCode-style dark theme
+- Monaco code editor with syntax highlighting
+- Multiple result view tabs
+- Real-time execution feedback
+- Professional loading states and animations
+
+### **3. Console Output Simulation**
+- Captures print() statements like real Python interpreter
+- Terminal-style console display
+- Line-by-line output visualization
+
+### **4. Safe Execution**
 - No actual Python code runs
 - No side effects or security risks
 - Pure simulation and reasoning
 
-### **3. RESTful API**
+### **5. RESTful API**
 - Clean HTTP endpoints
 - JSON request/response format
 - Easy integration with any client
+- CORS enabled for web applications
 
-### **4. Comprehensive Testing**
+### **6. Comprehensive Testing**
 - Multiple test scenarios
 - API validation
 - Model availability checks
@@ -198,6 +263,7 @@ backend/
 - Variable tracking: 95%+ accuracy
 - Control flow: 90%+ accuracy
 - Expression evaluation: 98%+ accuracy
+- Console output: 95%+ accuracy
 
 ## 🔮 Future Enhancements
 
@@ -207,6 +273,14 @@ backend/
 - **Recursive Functions**: Full recursion support
 - **Classes and Objects**: OOP simulation
 - **Import Statements**: Module simulation
+- **File I/O Simulation**: Virtual file operations
+
+### **UI/UX Improvements**
+- **Code Sharing**: Share code snippets
+- **Execution History**: Previous executions
+- **Code Templates**: Pre-built examples
+- **Themes**: Multiple color schemes
+- **Mobile Support**: Responsive design
 
 ### **Performance Improvements**
 - **Caching**: AI response caching
@@ -235,6 +309,12 @@ backend/
 - No code injection risks
 - Protected API keys
 
+### **5. User Experience**
+- Intuitive interface
+- Fast feedback
+- Professional design
+- Accessible to all skill levels
+
 ## 🏆 Innovation
 
 This architecture represents a **novel approach** to code execution simulation:
@@ -243,5 +323,7 @@ This architecture represents a **novel approach** to code execution simulation:
 - **Explainable**: Provides natural language explanations
 - **Safe**: No actual code execution
 - **Intelligent**: Adapts to complex code patterns
+- **Interactive**: Real-time web interface
+- **Educational**: Perfect for learning Python concepts
 
 **This is the future of code analysis and execution simulation!** 🚀

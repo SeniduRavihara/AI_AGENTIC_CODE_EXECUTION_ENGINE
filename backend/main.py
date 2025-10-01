@@ -6,7 +6,7 @@ Real AI agents using Google Gemini
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-from typing import Dict, Any
+from typing import Dict, Any, Optional
 import os
 import asyncio
 from datetime import datetime
@@ -15,7 +15,10 @@ from dotenv import load_dotenv
 # Load environment variables from .env file
 load_dotenv()
 
-from agents import CoordinatorAgent
+from agents.multi_language_coordinator import MultiLanguageCoordinator
+from agents.python.python_coordinator import PythonCoordinator
+from agents.java.java_coordinator import JavaCoordinator
+from agents.dsa_coordinator import DSACoordinator
 
 # Initialize FastAPI app
 app = FastAPI(
@@ -33,18 +36,34 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Initialize AI coordinator
+# Initialize AI coordinators
 try:
-    coordinator = CoordinatorAgent()
+    # Multi-language coordinator with dedicated language coordinators
+    multi_coordinator = MultiLanguageCoordinator()
+    python_coordinator = PythonCoordinator()
+    java_coordinator = JavaCoordinator()
+    dsa_coordinator = DSACoordinator()
+    print("🚀 Multi-Language AI Interpreter System initialized!")
+    print("🧠 DSA Optimization System ready!")
 except ValueError as e:
     print(f"❌ AI initialization failed: {e}")
     print("Set GEMINI_API_KEY environment variable")
-    coordinator = None
+    multi_coordinator = None
+    python_coordinator = None
+    java_coordinator = None
+    dsa_coordinator = None
 
 
 class CodeRequest(BaseModel):
     code: str
     language: str = "python"
+
+class DSARequest(BaseModel):
+    code: str
+    language: str = "python"
+    problem_type: str = "general"  # sorting, graph, dp, tree, array, etc.
+    input_data: Optional[Any] = None
+    optimization_level: str = "auto"  # auto, sequential, parallel, aggressive
 
 
 class CodeResponse(BaseModel):
@@ -77,41 +96,49 @@ async def root():
 @app.get("/health")
 async def health_check():
     """Health check endpoint"""
-    if coordinator is None:
+    if multi_coordinator is None:
         return {
             "status": "unhealthy",
-            "error": "AI coordinator not initialized",
+            "error": "Multi-language coordinator not initialized",
             "timestamp": datetime.now().isoformat()
         }
+    
+    # Check pipeline status
+    pipeline_status = multi_coordinator.get_pipeline_status() if multi_coordinator else {"multi_language_coordinator": False}
     
     return {
         "status": "healthy",
         "ai_model": "models/gemini-2.5-flash",
+        "multi_language_support": pipeline_status.get("multi_language_coordinator", False),
+        "supported_languages": pipeline_status.get("supported_languages", {}),
+        "interpreter_architecture": "Multi-Language Agent Pipeline System",
+        "language_details": pipeline_status.get("language_details", {}),
         "timestamp": datetime.now().isoformat()
     }
 
 
 @app.post("/execute", response_model=CodeResponse)
 async def execute_code(request: CodeRequest):
-    """Execute Python code using AI agents"""
+    """Execute code using multi-language AI interpreter system"""
     
-    if coordinator is None:
+    if multi_coordinator is None:
         raise HTTPException(
             status_code=500,
-            detail="AI coordinator not initialized. Check GEMINI_API_KEY."
+            detail="Multi-language coordinator not initialized. Check GEMINI_API_KEY."
         )
     
     if not request.code.strip():
         raise HTTPException(status_code=400, detail="Code cannot be empty")
     
-    if request.language.lower() != "python":
-        raise HTTPException(status_code=400, detail="Only Python code is supported")
+    if request.language.lower() not in ["python", "java"]:
+        raise HTTPException(status_code=400, detail="Only Python and Java code are supported")
     
     try:
         start_time = datetime.now()
         
-        # Execute code with AI
-        result = await coordinator.execute_code(request.code)
+        # Use multi-language coordinator for proper language routing
+        print(f"🔄 Using {request.language.title()} Interpreter via Multi-Language Coordinator")
+        result = await multi_coordinator.execute_code(request.code, request.language, use_pipeline=True)
         
         execution_time = (datetime.now() - start_time).total_seconds()
         
@@ -129,6 +156,102 @@ async def execute_code(request: CodeRequest):
         
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Execution failed: {str(e)}")
+
+
+@app.post("/execute-pipeline")
+async def execute_pipeline(request: CodeRequest):
+    """Execute code using language-specific FULL interpreter pipeline (experimental)"""
+    
+    if request.language.lower() == "python" and python_coordinator is None:
+        raise HTTPException(
+            status_code=500,
+            detail="Python coordinator not available."
+        )
+    elif request.language.lower() == "java" and java_coordinator is None:
+        raise HTTPException(
+            status_code=500,
+            detail="Java coordinator not available."
+        )
+    
+    if not request.code.strip():
+        raise HTTPException(status_code=400, detail="Code cannot be empty")
+    
+    try:
+        start_time = datetime.now()
+        print(f"🔬 Using FULL {request.language.title()} Interpreter Pipeline (Experimental)")
+        
+        # Route to specific coordinator
+        if request.language.lower() == "python":
+            result = await python_coordinator.execute_code(request.code, use_pipeline=True)
+        elif request.language.lower() == "java":
+            result = await java_coordinator.execute_code(request.code, use_pipeline=True)
+        else:
+            raise HTTPException(status_code=400, detail=f"Language {request.language} not supported")
+        execution_time = (datetime.now() - start_time).total_seconds()
+        
+        return CodeResponse(
+            success=result.get("success", False),
+            final_variables=result.get("final_variables", {}),
+            console_output=result.get("console_output", []),
+            execution_steps=result.get("execution_steps", []),
+            ai_reasoning=result.get("ai_reasoning", ""),
+            confidence=result.get("confidence", 0.0),
+            execution_time=execution_time,
+            timestamp=result["coordinator"]["timestamp"],
+            coordinator=result["coordinator"]
+        )
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Pipeline execution failed: {str(e)}")
+
+
+@app.post("/execute-dsa")
+async def execute_dsa_problem(request: DSARequest):
+    """Execute DSA problems with intelligent optimization and parallel processing"""
+    
+    if dsa_coordinator is None:
+        raise HTTPException(
+            status_code=500,
+            detail="DSA coordinator not initialized. Check GEMINI_API_KEY."
+        )
+    
+    if not request.code.strip():
+        raise HTTPException(status_code=400, detail="Code cannot be empty")
+    
+    if request.language.lower() not in ["python", "java"]:
+        raise HTTPException(status_code=400, detail="Only Python and Java code are supported")
+    
+    if request.problem_type not in ["general", "sorting", "graph", "dp", "tree", "array", "string", "math"]:
+        raise HTTPException(status_code=400, detail="Invalid problem type")
+    
+    if request.optimization_level not in ["auto", "sequential", "parallel", "aggressive"]:
+        raise HTTPException(status_code=400, detail="Invalid optimization level")
+    
+    try:
+        start_time = datetime.now()
+        
+        print(f"🧠 DSA Problem Execution Request")
+        print(f"📝 Problem Type: {request.problem_type}")
+        print(f"⚙️ Optimization: {request.optimization_level}")
+        
+        result = await dsa_coordinator.execute_dsa_problem(
+            code=request.code,
+            language=request.language,
+            problem_type=request.problem_type,
+            input_data=request.input_data,
+            optimization_level=request.optimization_level
+        )
+        
+        execution_time = (datetime.now() - start_time).total_seconds()
+        
+        return {
+            **result,
+            "total_execution_time": execution_time,
+            "dsa_endpoint": True
+        }
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"DSA execution failed: {str(e)}")
 
 
 @app.post("/execute-simple")
